@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis Cuentas Claras</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: una columna de "libro de cuentas" — resumen arriba, luego ingresos, gastos, deudas, meta y plan */
+:root{
+  --bg:#eef2f4; --surface:#ffffff; --ink:#15233b; --muted:#5b6b7f; --line:#d5dde5;
+  --accent:#1f7a72; --accent-soft:#d9efec; --warn:#b7791f; --warn-soft:#fbefd9; --bad:#b83a4b; --bad-soft:#f8e1e4; --good:#2e7d4f;
+  --c1:#1f7a72; --c2:#3d5a98; --c3:#c9853a; --c4:#8b5fa8; --c5:#d06a6a; --c6:#4f9fc4; --c7:#7a8a3a; --c8:#9b6b4a;
+  --display:"Fraunces", Georgia, "Times New Roman", serif; --body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1720; --surface:#16212d; --ink:#e7edf3; --muted:#9aabbd; --line:#2a3949;
+  --accent:#4fbfb3; --accent-soft:#16332f; --warn:#e2ad55; --warn-soft:#3a2d16; --bad:#ec7f8e; --bad-soft:#3b1d23; --good:#6fcf97; color-scheme: dark; }}
+:root[data-theme="dark"]{
+  --bg:#0f1720; --surface:#16212d; --ink:#e7edf3; --muted:#9aabbd; --line:#2a3949;
+  --accent:#4fbfb3; --accent-soft:#16332f; --warn:#e2ad55; --warn-soft:#3a2d16; --bad:#ec7f8e; --bad-soft:#3b1d23; --good:#6fcf97; color-scheme: dark; }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:24px 16px 64px;display:flex;flex-direction:column;gap:20px}
+h1,h2{font-family:var(--display);font-weight:650;text-wrap:balance;margin:0}
+h1{font-size:2rem;line-height:1.15}
+h2{font-size:1.3rem}
+p{margin:0}
+.sub{color:var(--muted);max-width:65ch}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.ghost{background:transparent}
+button.small{padding:4px 10px;font-size:.9rem}
+button.icon{padding:4px 9px;color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.panel header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.total{font-variant-numeric:tabular-nums;color:var(--muted)}
+.total b{color:var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;border-top:4px solid var(--line)}
+.tile .k{font-size:.85rem;color:var(--muted)}
+.tile .v{font-family:var(--display);font-size:1.6rem;font-variant-numeric:tabular-nums;font-weight:500}
+.tile .h{font-size:.85rem;color:var(--muted)}
+.tile.good{border-top-color:var(--good)} .tile.warn{border-top-color:var(--warn)} .tile.bad{border-top-color:var(--bad)} .tile.acc{border-top-color:var(--accent)}
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{display:grid;gap:8px;align-items:center}
+.row.inc{grid-template-columns:minmax(0,2fr) minmax(90px,1fr) auto}
+.row.exp{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) minmax(80px,1fr) minmax(0,1.1fr) minmax(0,1.2fr) auto}
+.row.debt{grid-template-columns:minmax(0,2fr) repeat(3,minmax(80px,1fr)) auto}
+.row.head{font-size:.8rem;color:var(--muted)}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px;width:100%;min-width:0}
+input[type=number]{text-align:right;font-variant-numeric:tabular-nums}
+.eq{font-size:.8rem;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:720px){
+  .row.head{display:none}
+  .row.exp{grid-template-columns:1fr 1fr; padding:10px;border:1px solid var(--line);border-radius:10px}
+  .row.exp>input:first-child{grid-column:1/-1}
+  .row.debt{grid-template-columns:1fr 1fr; padding:10px;border:1px solid var(--line);border-radius:10px}
+  .row.debt>input:first-child{grid-column:1/-1}
+  .row.inc{grid-template-columns:1fr 110px auto}
+}
+.lbl-m{display:none;font-size:.75rem;color:var(--muted)}
+@media (max-width:720px){.lbl-m{display:block}}
+.field{display:flex;flex-direction:column;gap:2px}
+.chart-bars{display:flex;flex-direction:column;gap:8px}
+.cb{display:grid;grid-template-columns:minmax(90px,170px) 1fr auto;gap:10px;align-items:center;font-size:.92rem}
+.cb .track{height:14px;background:var(--bg);border-radius:7px;overflow:hidden}
+.cb .fill{height:100%;border-radius:7px}
+.cb .val{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--muted)}
+.cb .val b{color:var(--ink)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.rule{display:flex;flex-direction:column;gap:6px}
+.rule .line{display:flex;justify-content:space-between;font-size:.92rem}
+.rule .meter{position:relative;height:12px;background:var(--bg);border-radius:6px;overflow:hidden}
+.rule .meter .f{position:absolute;inset:0 auto 0 0;border-radius:6px}
+.rule .meter .t{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+.recs{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.recs li{padding:10px 12px;border-radius:10px;border-left:4px solid var(--accent);background:var(--accent-soft)}
+.recs li.warn{border-left-color:var(--warn);background:var(--warn-soft)}
+.recs li.bad{border-left-color:var(--bad);background:var(--bad-soft)}
+.pill{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.goal{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:end}
+.plan{width:100%;border-collapse:collapse;font-size:.92rem}
+.plan th,.plan td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+.plan td.n,.plan th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+.note{font-size:.85rem;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font-size:.9rem}
+.example{font-size:.85rem;background:var(--warn-soft);border:1px solid var(--warn);color:var(--ink);border-radius:10px;padding:8px 12px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header style="display:flex;flex-direction:column;gap:8px">
+    <h1>Mis Cuentas Claras</h1>
+    <p class="sub">Apunta lo que entra y lo que sale cada mes. Verás en qué se va tu dinero, cuánto puedes ahorrar, cuándo terminas tus deudas y qué puedes mejorar. Los datos se quedan solo en este navegador.</p>
+    <div class="bar">
+      <button class="primary" id="btn-blank">Empezar con mis datos</button>
+      <button id="btn-example">Cargar ejemplo</button>
+      <button id="btn-copy">Copiar resumen</button>
+    </div>
+    <p class="example" id="example-flag">Estás viendo un ejemplo con datos inventados. Pulsa «Empezar con mis datos» para poner los tuyos.</p>
+  </header>
+
+  <section class="tiles" aria-label="Resumen del mes">
+    <div class="tile acc"><div class="k">Entra al mes</div><div class="v" id="t-inc">—</div><div class="h">Ingresos netos</div></div>
+    <div class="tile"><div class="k">Gastos al mes</div><div class="v" id="t-exp">—</div><div class="h" id="t-exp-h">—</div></div>
+    <div class="tile" id="tile-debt"><div class="k">Cuotas de deudas</div><div class="v" id="t-debt">—</div><div class="h" id="t-debt-h">—</div></div>
+    <div class="tile" id="tile-free"><div class="k">Te queda al mes</div><div class="v" id="t-free">—</div><div class="h" id="t-free-h">—</div></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-inc">
+    <header><h2 id="h-inc">1. Lo que entra</h2><span class="total">Total: <b id="sum-inc">—</b>/mes</span></header>
+    <div class="rows" id="inc-rows"></div>
+    <div><button class="small" id="add-inc">+ Añadir ingreso</button></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-exp">
+    <header><h2 id="h-exp">2. Lo que sale</h2><span class="total">Total: <b id="sum-exp">—</b>/mes</span></header>
+    <p class="note">Si algo se paga cada 3 meses o una vez al año, elige esa frecuencia y la app lo pasa a su parte mensual. Las cuotas de préstamos van en el apartado 3.</p>
+    <div class="row exp head"><span>Concepto</span><span>Categoría</span><span style="text-align:right">Importe</span><span>Cada cuánto</span><span>Tipo</span><span></span></div>
+    <div class="rows" id="exp-rows"></div>
+    <div><button class="small" id="add-exp">+ Añadir gasto</button></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-debt">
+    <header><h2 id="h-debt">3. Deudas y préstamos</h2><span class="total">Cuotas: <b id="sum-debt">—</b>/mes</span></header>
+    <div class="row debt head"><span>Deuda</span><span style="text-align:right">Cuota al mes</span><span style="text-align:right">Te queda por pagar</span><span style="text-align:right">Interés anual %</span><span></span></div>
+    <div class="rows" id="debt-rows"></div>
+    <div><button class="small" id="add-debt">+ Añadir deuda</button></div>
+  </section>
+
+  <section class="two">
+    <div class="panel" aria-labelledby="h-cat">
+      <h2 id="h-cat">En qué se va tu dinero</h2>
+      <div class="chart-bars" id="cat-bars" role="img" aria-label="Gasto mensual por categoría"></div>
+    </div>
+    <div class="panel" aria-labelledby="h-rule">
+      <h2 id="h-rule">Regla 50 / 30 / 20</h2>
+      <p class="note">Una referencia habitual: la mitad para necesidades, un 30 % para gastos personales y un 20 % para ahorrar y pagar deudas. La raya negra marca el objetivo.</p>
+      <div id="rule"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-goal">
+    <h2 id="h-goal">4. Mi meta de ahorro</h2>
+    <p class="note">Por ejemplo, devolver un préstamo a un familiar, un colchón para imprevistos o un viaje.</p>
+    <div class="goal">
+      <label class="field">Meta<input id="g-name" type="text" placeholder="Colchón de emergencia"></label>
+      <label class="field">Cantidad (€)<input id="g-amount" type="number" min="0" step="10" inputmode="decimal"></label>
+      <label class="field">En cuántos meses<input id="g-months" type="number" min="1" step="1" inputmode="numeric"></label>
+    </div>
+    <p id="g-out" aria-live="polite"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-plan">
+    <header><h2 id="h-plan">5. Plan para salir de deudas</h2>
+      <label class="field" style="min-width:200px">Pago extra al mes (€)<input id="extra" type="number" min="0" step="10" inputmode="decimal"></label></header>
+    <p class="note">Método «bola de nieve»: pagas la cuota de todas y el dinero extra va a la deuda más pequeña. Cuando la terminas, su cuota se suma a la siguiente. Si sabes el interés, la app lo tiene en cuenta.</p>
+    <div class="tw"><table class="plan"><thead><tr><th>Orden</th><th>Deuda</th><th class="n">Pendiente</th><th class="n">Solo con la cuota</th><th class="n">Con el plan</th></tr></thead><tbody id="plan-body"></tbody></table></div>
+    <p id="plan-out"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-recs">
+    <h2 id="h-recs">Cómo mejorar tus finanzas</h2>
+    <ul class="recs" id="recs"></ul>
+    <p class="note">Orientación general calculada con los datos que has puesto. No sustituye el consejo de un profesional financiero.</p>
+  </section>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const CATS=['Vivienda','Comunidad y hogar','Alimentación','Suministros (luz, agua, gas)','Teléfono e internet','Transporte y coche','Seguros','Hijos y educación','Salud y farmacia','Suscripciones','Restaurantes y ocio','Ropa y compras','Efectivo','Otros'];
+const FREQ={mensual:1,semanal:52/12,trimestral:1/3,semestral:1/6,anual:1/12};
+const FREQ_LBL={mensual:'Cada mes',semanal:'Cada semana',trimestral:'Cada 3 meses',semestral:'Cada 6 meses',anual:'Una vez al año'};
+const TYPES={necesario:'Necesario',personal:'Personal / prescindible'};
+const COLORS=['--c1','--c2','--c3','--c4','--c5','--c6','--c7','--c8'];
+const EXAMPLE={
+  inc:[{n:'Nómina',a:1650},{n:'Ayuda familiar hijos',a:60}],
+  exp:[
+    {n:'Alquiler',c:'Vivienda',a:450,f:'mensual',t:'necesario'},
+    {n:'Comunidad',c:'Comunidad y hogar',a:40,f:'mensual',t:'necesario'},
+    {n:'Supermercado',c:'Alimentación',a:320,f:'mensual',t:'necesario'},
+    {n:'Luz',c:'Suministros (luz, agua, gas)',a:45,f:'mensual',t:'necesario'},
+    {n:'Agua',c:'Suministros (luz, agua, gas)',a:55,f:'trimestral',t:'necesario'},
+    {n:'Internet y móvil',c:'Teléfono e internet',a:35,f:'mensual',t:'necesario'},
+    {n:'Gasolina',c:'Transporte y coche',a:70,f:'mensual',t:'necesario'},
+    {n:'Seguro del coche',c:'Seguros',a:320,f:'anual',t:'necesario'},
+    {n:'Seguro de hogar',c:'Seguros',a:180,f:'anual',t:'necesario'},
+    {n:'Plataformas de series',c:'Suscripciones',a:18,f:'mensual',t:'personal'},
+    {n:'Cenas y salidas',c:'Restaurantes y ocio',a:90,f:'mensual',t:'personal'},
+    {n:'Ropa',c:'Ropa y compras',a:60,f:'mensual',t:'personal'},
+    {n:'Efectivo para el día a día',c:'Efectivo',a:30,f:'semanal',t:'personal'}],
+  debt:[{n:'Préstamo coche',q:150,p:2400,i:7},{n:'Tarjeta de crédito',q:60,p:900,i:22},{n:'Préstamo familiar',q:0,p:1000,i:0}],
+  goal:{n:'Devolver préstamo familiar',a:1000,m:8},extra:50
+};
+const KEY='mis-cuentas-claras-v1';
+let S, isExample=false;
+const fmt=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const fmt2=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=v=>new Intl.NumberFormat('es-ES',{maximumFractionDigits:0}).format(v)+' %';
+const num=v=>{const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:0;};
+const $=id=>document.getElementById(id);
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);S=o.s;isExample=!!o.ex;return;}}catch(e){} S=clone(EXAMPLE);isExample=true;}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({s:S,ex:isExample}));}catch(e){}}
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>el.hidden=true,2200);}
+
+function input(type,val,ph,on,attrs={}){const i=document.createElement('input');i.type=type;i.value=val??'';if(ph)i.placeholder=ph;Object.assign(i,attrs);if(type==='number'){i.step=attrs.step||'any';i.min='0';i.inputMode='decimal';}i.addEventListener('input',()=>{on(i.value);changed();});return i;}
+function select(opts,val,on,label){const s=document.createElement('select');s.setAttribute('aria-label',label);for(const [k,v] of opts){const o=document.createElement('option');o.value=k;o.textContent=v;s.appendChild(o);}s.value=val;s.addEventListener('change',()=>{on(s.value);changed();});return s;}
+function delBtn(on,label){const b=document.createElement('button');b.className='icon';b.type='button';b.textContent='✕';b.setAttribute('aria-label','Quitar '+label);b.addEventListener('click',()=>{on();renderLists();changed();});return b;}
+function wrapM(lbl,el){const d=document.createElement('label');d.className='field';const s=document.createElement('span');s.className='lbl-m';s.textContent=lbl;d.append(s,el);return d;}
+
+function renderLists(){
+  const ir=$('inc-rows');ir.replaceChildren();
+  S.inc.forEach((r,k)=>{const d=document.createElement('div');d.className='row inc';
+    const n=input('text',r.n,'Concepto',v=>r.n=v,{id:'inc-n-'+k}); n.setAttribute('aria-label','Concepto del ingreso');
+    const a=input('number',r.a,'0',v=>r.a=num(v),{id:'inc-a-'+k}); a.setAttribute('aria-label','Importe mensual');
+    d.append(n,a,delBtn(()=>S.inc.splice(k,1),r.n||'ingreso'));ir.appendChild(d);});
+  const er=$('exp-rows');er.replaceChildren();
+  S.exp.forEach((r,k)=>{const d=document.createElement('div');d.className='row exp';
+    const n=input('text',r.n,'Concepto',v=>r.n=v,{id:'exp-n-'+k}); n.setAttribute('aria-label','Concepto del gasto');
+    const c=select(CATS.map(x=>[x,x]),r.c,v=>r.c=v,'Categoría'); c.id='exp-c-'+k;
+    const a=input('number',r.a,'0',v=>{r.a=num(v);eq.textContent=eqTxt(r);},{id:'exp-a-'+k}); a.setAttribute('aria-label','Importe');
+    const f=select(Object.entries(FREQ_LBL),r.f,v=>{r.f=v;eq.textContent=eqTxt(r);},'Frecuencia'); f.id='exp-f-'+k;
+    const t=select(Object.entries(TYPES),r.t,v=>r.t=v,'Tipo de gasto'); t.id='exp-t-'+k;
+    const eq=document.createElement('div');eq.className='eq';eq.textContent=eqTxt(r);
+    const aw=document.createElement('div');aw.className='field';aw.append(wrapM('Importe',a),eq);
+    d.append(n,wrapM('Categoría',c),aw,wrapM('Cada cuánto',f),wrapM('Tipo',t),delBtn(()=>S.exp.splice(k,1),r.n||'gasto'));er.appendChild(d);});
+  const dr=$('debt-rows');dr.replaceChildren();
+  S.debt.forEach((r,k)=>{const d=document.createElement('div');d.className='row debt';
+    const n=input('text',r.n,'Nombre de la deuda',v=>r.n=v,{id:'debt-n-'+k}); n.setAttribute('aria-label','Nombre de la deuda');
+    const q=input('number',r.q,'0',v=>r.q=num(v),{id:'debt-q-'+k}); q.setAttribute('aria-label','Cuota mensual');
+    const p=input('number',r.p,'0',v=>r.p=num(v),{id:'debt-p-'+k}); p.setAttribute('aria-label','Pendiente');
+    const i=input('number',r.i,'0',v=>r.i=num(v),{id:'debt-i-'+k,step:'0.1'}); i.setAttribute('aria-label','Interés anual');
+    d.append(n,wrapM('Cuota al mes',q),wrapM('Te queda por pagar',p),wrapM('Interés anual %',i),delBtn(()=>S.debt.splice(k,1),r.n||'deuda'));dr.appendChild(d);});
+  $('g-name').value=S.goal.n||'';$('g-amount').value=S.goal.a||'';$('g-months').value=S.goal.m||'';$('extra').value=S.extra||'';
+  $('example-flag').hidden=!isExample;
+}
+function eqTxt(r){return r.f==='mensual'?'':'= '+fmt2.format(num(r.a)*FREQ[r.f])+'/mes';}
+const monthly=r=>num(r.a)*(FREQ[r.f]||1);
+
+function simulate(debts,extra){
+  // devuelve meses hasta terminar cada deuda (bola de nieve), máx 600
+  const ds=debts.filter(d=>d.p>0).map(d=>({...d,bal:d.p,done:null}));
+  const order=[...ds].sort((a,b)=>a.p-b.p);
+  let m=0;
+  while(ds.some(d=>d.bal>0.005)&&m<600){m++;
+    let pool=extra;
+    for(const d of ds){if(d.bal<=0)continue;d.bal*=1+(d.i||0)/1200;}
+    for(const d of ds){if(d.bal<=0){pool+=d.q;continue;}const pay=Math.min(d.q,d.bal);d.bal-=pay;pool+=d.q-pay;}
+    for(const d of order){if(d.bal<=0)continue;const pay=Math.min(pool,d.bal);d.bal-=pay;pool-=pay;if(pool<=0)break;}
+    for(const d of ds){if(d.bal<=0.005&&d.done===null){d.bal=0;d.done=m;}}
+  }
+  return {order,months:m};
+}
+function soloQuota(d){if(!(d.p>0))return null;if(!(d.q>0))return Infinity;let b=d.p,m=0;while(b>0.005&&m<600){m++;b=b*(1+(d.i||0)/1200)-d.q;if(m>2&&b>=d.p)return Infinity;}return m>=600?Infinity:m;}
+function mTxt(m){if(m===null)return '—';if(m===Infinity)return 'No se termina';if(m<12)return m+(m===1?' mes':' meses');const y=Math.floor(m/12),r=m%12;return y+(y===1?' año':' años')+(r?' y '+r+(r===1?' mes':' meses'):'');}
+function endDate(m){if(!isFinite(m))return '';const d=new Date();d.setMonth(d.getMonth()+m);return d.toLocaleDateString('es-ES',{month:'long',year:'numeric'});}
+
+function compute(){
+  const inc=S.inc.reduce((s,r)=>s+num(r.a),0);
+  const exps=S.exp.map(r=>({...r,m:monthly(r)}));
+  const exp=exps.reduce((s,r)=>s+r.m,0);
+  const nec=exps.filter(r=>r.t==='necesario').reduce((s,r)=>s+r.m,0);
+  const per=exp-nec;
+  const debtQ=S.debt.reduce((s,r)=>s+num(r.q),0);
+  const free=inc-exp-debtQ;
+  const byCat={};exps.forEach(r=>byCat[r.c]=(byCat[r.c]||0)+r.m);
+  return {inc,exp,nec,per,debtQ,free,byCat,exps};
+}
+
+function changed(){save();renderOut();}
+function setTile(id,cls){const t=$(id);t.classList.remove('good','warn','bad','acc');if(cls)t.classList.add(cls);}
+
+function renderOut(){
+  const R=compute(), inc=R.inc||0;
+  $('t-inc').textContent=fmt.format(R.inc);$('sum-inc').textContent=fmt.format(R.inc);
+  $('t-exp').textContent=fmt.format(R.exp);$('sum-exp').textContent=fmt.format(R.exp);
+  $('t-exp-h').textContent=inc?pct(R.exp/inc*100)+' de lo que entra':'—';
+  $('t-debt').textContent=fmt.format(R.debtQ);$('sum-debt').textContent=fmt.format(R.debtQ);
+  const dPct=inc?R.debtQ/inc*100:0;
+  $('t-debt-h').textContent=inc?pct(dPct)+' de lo que entra':'—';
+  setTile('tile-debt',dPct>35?'bad':dPct>20?'warn':'good');
+  $('t-free').textContent=fmt.format(R.free);
+  $('t-free-h').textContent=inc?(R.free<0?'Te falta dinero cada mes':pct(R.free/inc*100)+' para ahorrar'):'—';
+  setTile('tile-free',R.free<0?'bad':(inc&&R.free/inc<0.1)?'warn':'good');
+
+  // categorías
+  const cb=$('cat-bars');cb.replaceChildren();
+  const cats=Object.entries(R.byCat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(R.debtQ>0)cats.push(['Deudas (cuotas)',R.debtQ]);
+  cats.sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(1,...cats.map(c=>c[1]));const tot=R.exp+R.debtQ;
+  if(!cats.length){const p=document.createElement('p');p.className='note';p.textContent='Añade tus gastos para ver el reparto.';cb.appendChild(p);}
+  cats.forEach(([k,v],i)=>{const row=document.createElement('div');row.className='cb';
+    const l=document.createElement('span');l.textContent=k;
+    const tr=document.createElement('div');tr.className='track';const f=document.createElement('div');f.className='fill';f.style.width=(v/max*100)+'%';f.style.background=k.startsWith('Deudas')?'var(--bad)':`var(${COLORS[i%COLORS.length]})`;tr.appendChild(f);
+    const val=document.createElement('span');val.className='val';const b=document.createElement('b');b.textContent=fmt.format(v);val.append(b,' · '+pct(tot?v/tot*100:0));
+    row.append(l,tr,val);cb.appendChild(row);});
+
+  // regla 50/30/20
+  const ru=$('rule');ru.replaceChildren();
+  const ahorro=Math.max(0,R.free)+R.debtQ;
+  [['Necesidades',R.nec,50,'var(--c2)'],['Gastos personales',R.per,30,'var(--c3)'],['Ahorro y deudas',ahorro,20,'var(--c1)']].forEach(([n,v,t,c])=>{
+    const p=inc?v/inc*100:0;const w=document.createElement('div');w.className='rule';
+    const line=document.createElement('div');line.className='line';const a=document.createElement('span');a.textContent=n;const b=document.createElement('span');b.style.fontVariantNumeric='tabular-nums';b.textContent=pct(p)+' ('+fmt.format(v)+') · objetivo '+t+' %';line.append(a,b);
+    const m=document.createElement('div');m.className='meter';const f=document.createElement('div');f.className='f';f.style.width=Math.min(100,p)+'%';f.style.background=c;const tk=document.createElement('div');tk.className='t';tk.style.left=t+'%';m.append(f,tk);
+    w.append(line,m);ru.appendChild(w);});
+
+  // meta
+  const gA=num(S.goal.a),gM=Math.round(num(S.goal.m));const go=$('g-out');go.replaceChildren();
+  if(gA>0&&gM>0){const per=gA/gM;const b=document.createElement('b');b.textContent=fmt2.format(per)+' al mes';
+    go.append('Para reunir '+fmt.format(gA)+(S.goal.n?' ('+S.goal.n+')':'')+' en '+mTxt(gM)+' necesitas apartar ',b,'. ');
+    if(R.free<=0)go.append('Ahora mismo no te sobra dinero: primero hay que recortar gastos.');
+    else if(per>R.free)go.append('Es más de lo que te queda ('+fmt.format(R.free)+'): con eso tardarías '+mTxt(Math.ceil(gA/R.free))+'.');
+    else go.append('Te cabe: después te quedarían '+fmt.format(R.free-per)+' al mes de margen.');
+  } else go.textContent='Pon una cantidad y un plazo para ver cuánto apartar cada mes.';
+
+  // plan deudas
+  const debts=S.debt.map(d=>({n:d.n||'Deuda',q:num(d.q),p:num(d.p),i:num(d.i)}));
+  const sim=simulate(debts,num(S.extra));const pb=$('plan-body');pb.replaceChildren();
+  sim.order.forEach((d,k)=>{const tr=document.createElement('tr');
+    [k+1,d.n,fmt.format(d.p),mTxt(soloQuota(d)),d.done?mTxt(d.done)+' · '+endDate(d.done):'No se termina'].forEach((v,j)=>{const td=document.createElement('td');td.textContent=v;if(j>=2)td.className='n';tr.appendChild(td);});pb.appendChild(tr);});
+  const po=$('plan-out');
+  if(!sim.order.length)po.textContent='Añade cuánto te queda por pagar de cada deuda para ver el plan.';
+  else if(sim.order.some(d=>!d.done))po.textContent='Alguna deuda no se termina con estas cuotas: súbele el pago o añade un pago extra.';
+  else po.textContent='Con '+fmt.format(num(S.extra))+' extra al mes quedas libre de deudas en '+mTxt(sim.months)+' ('+endDate(sim.months)+').'+(num(S.extra)>Math.max(0,R.free)?' Ojo: ese extra es más de lo que te sobra cada mes.':'');
+
+  // recomendaciones
+  const recs=[];const add=(cls,t)=>recs.push([cls,t]);
+  if(!inc) add('warn','Empieza apuntando tus ingresos netos de cada mes (lo que te llega al banco).');
+  else{
+    if(R.free<0) add('bad',`Cada mes sale más de lo que entra: te faltan ${fmt.format(-R.free)}. Revisa primero los gastos personales (${fmt.format(R.per)}) y evita pedir préstamos nuevos para cubrir el hueco.`);
+    else if(R.free/inc<0.1) add('warn',`Te quedan ${fmt.format(R.free)} al mes (${pct(R.free/inc*100)}). Intenta llegar al 10 % (${fmt.format(inc*0.1)}) recortando algo de lo personal.`);
+    else add('good',`Buen margen: te quedan ${fmt.format(R.free)} al mes. Programa una transferencia automática a una cuenta de ahorro el mismo día que cobras.`);
+    if(dPct>35) add('bad',`Tus deudas se llevan el ${pct(dPct)} de tus ingresos. Por encima del 35 % es una situación de riesgo: no pidas más crédito y usa el plan de la bola de nieve.`);
+    else if(dPct>20) add('warn',`Tus deudas se llevan el ${pct(dPct)} de tus ingresos. Cuando termines una, pasa su cuota a la siguiente o al ahorro.`);
+    const viv=(R.byCat['Vivienda']||0)+(R.byCat['Comunidad y hogar']||0);
+    if(viv/inc>0.35) add('warn',`La vivienda se lleva el ${pct(viv/inc*100)} de tus ingresos. Lo recomendable es no pasar del 30–35 %.`);
+    const subs=R.byCat['Suscripciones']||0; if(subs>0) add('',`Pagas ${fmt2.format(subs)} al mes en suscripciones (${fmt.format(subs*12)} al año). Quédate solo con las que uses cada semana.`);
+    const cash=R.byCat['Efectivo']||0; if(cash/inc>0.1) add('warn',`Sacas ${fmt.format(cash)} al mes en efectivo. Es dinero difícil de controlar: fija una cantidad semanal y paga lo demás con tarjeta para que quede registrado.`);
+    const ocio=(R.byCat['Restaurantes y ocio']||0)+(R.byCat['Ropa y compras']||0); if(ocio/inc>0.15) add('warn',`Ocio, ropa y compras suman ${fmt.format(ocio)} al mes. Ponles un presupuesto y apúntalo.`);
+    const yearly=R.exps.filter(r=>r.f!=='mensual'&&r.f!=='semanal'); if(yearly.length){const s=yearly.reduce((a,r)=>a+r.m,0);add('',`Tienes pagos que no son mensuales (${yearly.map(r=>r.n).filter(Boolean).join(', ')}). Aparta ${fmt2.format(s)} cada mes en una hucha para que no te pillen por sorpresa.`);}
+    const emer=(R.nec+R.debtQ)*3; add('',`Tu colchón de emergencia ideal es de unos ${fmt.format(emer)} (3 meses de gastos necesarios y cuotas). Empieza por una primera meta de ${fmt.format(Math.min(1000,emer))}.`);
+    const hi=S.debt.filter(d=>num(d.i)>=15&&num(d.p)>0); if(hi.length) add('bad',`${hi.map(d=>d.n).join(', ')} ${hi.length>1?'tienen':'tiene'} un interés muy alto. Si puedes, prioriza pagarla antes y no la vuelvas a usar.`);
+  }
+  const ul=$('recs');ul.replaceChildren();recs.forEach(([c,t])=>{const li=document.createElement('li');if(c)li.className=c;li.textContent=t;ul.appendChild(li);});
+}
+
+function summary(){const R=compute();return ['Mis Cuentas Claras — resumen mensual',`Entra: ${fmt.format(R.inc)}`,`Gastos: ${fmt.format(R.exp)}`,`Cuotas de deudas: ${fmt.format(R.debtQ)}`,`Me queda: ${fmt.format(R.free)}`,'',...Object.entries(R.byCat).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}: ${fmt2.format(v)}`)].join('\n');}
+
+$('add-inc').onclick=()=>{S.inc.push({n:'',a:''});renderLists();changed();$('inc-n-'+(S.inc.length-1))?.focus();};
+$('add-exp').onclick=()=>{S.exp.push({n:'',c:'Otros',a:'',f:'mensual',t:'necesario'});renderLists();changed();$('exp-n-'+(S.exp.length-1))?.focus();};
+$('add-debt').onclick=()=>{S.debt.push({n:'',q:'',p:'',i:''});renderLists();changed();$('debt-n-'+(S.debt.length-1))?.focus();};
+$('g-name').oninput=e=>{S.goal.n=e.target.value;changed();};
+$('g-amount').oninput=e=>{S.goal.a=num(e.target.value);changed();};
+$('g-months').oninput=e=>{S.goal.m=num(e.target.value);changed();};
+$('extra').oninput=e=>{S.extra=num(e.target.value);changed();};
+$('btn-example').onclick=()=>{S=clone(EXAMPLE);isExample=true;renderLists();changed();toast('Ejemplo cargado');};
+$('btn-blank').onclick=()=>{S={inc:[{n:'Nómina',a:''}],exp:[{n:'Alquiler o hipoteca',c:'Vivienda',a:'',f:'mensual',t:'necesario'},{n:'Supermercado',c:'Alimentación',a:'',f:'mensual',t:'necesario'},{n:'Luz',c:'Suministros (luz, agua, gas)',a:'',f:'mensual',t:'necesario'},{n:'Internet y móvil',c:'Teléfono e internet',a:'',f:'mensual',t:'necesario'}],debt:[],goal:{n:'Colchón de emergencia',a:1000,m:10},extra:0};isExample=false;renderLists();changed();$('inc-a-0')?.focus();};
+$('btn-copy').onclick=async()=>{try{await navigator.clipboard.writeText(summary());toast('Resumen copiado');}catch(e){toast('No se pudo copiar en este navegador');}};
+
+load();renderLists();renderOut();
+</script>
+</body>
+</html>
